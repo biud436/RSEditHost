@@ -88,6 +88,9 @@ LRESULT CALLBACK EditProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam
 			SetIME();
 			delete[] szComp;
 		}
+
+		ImmReleaseContext(hWnd, hImc);
+
 		break;
 	case WM_SETFOCUS: // Æ÷Ä¿½º È¹µæ
 		break;
@@ -121,7 +124,7 @@ RSDLL BOOL ReleaseIME()
 
 	SetWindowLongPtr(g_hEdit, GWLP_WNDPROC, (LONG_PTR)OldWndProc);
 	BOOL ret = DestroyWindow(g_hEdit);
-	FocusWindow();
+	SetFocus(g_hWnd);
 	
 	g_bInit = FALSE;
 	g_hEdit = NULL;
