@@ -37,7 +37,7 @@ extern "C" {
 	RSDLL BOOL ReleaseIME();
 	RSDLL int GetCharText(const wchar_t* buffers);
 
-	//RSDLL int GetCaretIndex();
+	RSDLL int GetCaretIndex();
 
 	// Ãß°¡ API
 	RSDLL LPWSTR GetLastChar();

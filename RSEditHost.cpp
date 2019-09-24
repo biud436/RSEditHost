@@ -22,6 +22,8 @@ LRESULT CALLBACK EditProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam
 int g_nLastMaxChars = 40;
 BOOL g_bHan = FALSE;
 
+int g_nEditIndex = 0;
+
 RSDLL HANDLE CreateEdit(int maxChars, const int unknown)
 {
 	// Find the Window Handle from RGSS Player.
@@ -83,18 +85,49 @@ void ConcatStringToComp(HIMC& hImc, DWORD type, TCHAR change_to[])
 LRESULT CALLBACK EditProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam)
 {
 	HIMC hImc = NULL;
+	TCHAR szChar[128];
 
 	switch (iMessage) {
 	case WM_CREATE:
 		g_bHan = FALSE;
+		g_nEditIndex = 0;
 		break;
 	case WM_CHAR:
 		g_bHan = FALSE;
+		switch (wParam)
+		{
+		case VK_BACK:
+			if (g_nEditIndex > 0) {
+				g_nEditIndex--;
+			}
+			break;
+		default:
+			g_nEditIndex++;
+			break;
+		}
 		break;
 	case WM_KEYDOWN:
 		switch (wParam) {
 		case VK_RETURN:
 			SetFocus(g_hWnd);
+			break;
+		case VK_LEFT:
+			if (g_nEditIndex > 0) {
+				g_nEditIndex--;
+			}
+			break;
+		case VK_RIGHT: 
+			GetCharText(szChar);
+			if (g_nEditIndex < _tcslen(szChar)) {
+				g_nEditIndex++;
+			}
+			break;
+		case VK_HOME:
+			g_nEditIndex = 0;
+			break;
+		case VK_END:
+			GetCharText(szChar);
+			g_nEditIndex = _tcslen(szChar);
 			break;
 		}
 		break;
@@ -209,4 +242,9 @@ RSDLL LONG GetTextWidth(LPCWSTR lpString, int c)
 
 	return sz.cx;
 	
+}
+
+RSDLL int GetCaretIndex()
+{
+	return g_nEditIndex;
 }
