@@ -73,11 +73,16 @@ void ConcatStringToComp(HIMC& hImc, DWORD type, TCHAR change_to[])
 		ImmGetCompositionString(hImc, type, character, len);
 		character[len] = 0;
 
+		g_bHan = TRUE;
+
 		lstrcpy(change_to, character);
 
 		SetIME(g_nLastMaxChars);
 
 		delete[] character;
+	}
+	else {
+		g_bHan = FALSE;
 	}
 
 }
@@ -146,6 +151,10 @@ LRESULT CALLBACK EditProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam
 		else  if (lParam & GCS_RESULTSTR) // 조립 완료
 		{
 			ConcatStringToComp(hImc, GCS_RESULTSTR, g_lpszLastChar);
+		}
+
+		if (g_bHan) {
+			g_nEditIndex++;
 		}
 
 		ImmReleaseContext(hWnd, hImc);
