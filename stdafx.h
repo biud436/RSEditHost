@@ -36,6 +36,7 @@ extern "C" {
 	RSDLL void FocusWindow();
 	RSDLL BOOL ReleaseIME();
 	RSDLL int GetCharText(const wchar_t* buffers);
+	RSDLL void SetEditText(const wchar_t* buffers);
 
 	RSDLL int GetCaretIndex();
 

@@ -200,6 +200,7 @@ RSDLL BOOL ReleaseIME()
 	g_bInit = FALSE;
 	g_hEdit = NULL;
 	g_hWnd = NULL;
+	g_nEditIndex = 0;
 
 	return ret;
 }
@@ -247,4 +248,14 @@ RSDLL LONG GetTextWidth(LPCWSTR lpString, int c)
 RSDLL int GetCaretIndex()
 {
 	return g_nEditIndex;
+}
+
+RSDLL void SetEditText(const wchar_t* buffers)
+{
+	if (!g_bInit)
+		return;
+
+	int len = _tcslen(buffers);
+	SendMessage(g_hEdit, WM_SETTEXT, 0, (LPARAM)buffers);
+	SendMessage(g_hEdit, WM_KEYDOWN, VK_END, 0);
 }
