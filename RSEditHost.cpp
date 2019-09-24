@@ -12,16 +12,24 @@
 HWND g_hWnd = NULL;
 HWND g_hEdit = NULL;
 BOOL g_bInit = FALSE;
+HMODULE g_hRGSSPlayer = NULL;
 
 WNDPROC OldWndProc;
-TCHAR g_lpszLastChar[3] = { 0x0A, 0x0C, 0 };
+TCHAR g_lpszLastChar[3] = { 0, 0, 0 };
+TCHAR g_lpszCompChar[3] = { 0, 0, 0 };
 LRESULT CALLBACK EditProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam);
+
+int g_nLastMaxChars = 40;
+BOOL g_bHan = FALSE;
 
 RSDLL HANDLE CreateEdit(int maxChars, const int unknown)
 {
 	// Find the Window Handle from RGSS Player.
 	WCHAR lpszGameTitle[MAX_PATH];
 	WCHAR lpszIniFile[MAX_PATH];
+	WCHAR lpszDllPath[MAX_PATH];
+
+	g_nLastMaxChars = maxChars;
 
 	GetCurrentDirectoryW(MAX_PATH, lpszIniFile);
 
@@ -53,12 +61,36 @@ RSDLL HANDLE CreateEdit(int maxChars, const int unknown)
 	return g_hEdit;
 }
 
+void ConcatStringToComp(HIMC& hImc, DWORD type, TCHAR change_to[])
+{
+	int len = ImmGetCompositionString(hImc, type, NULL, 0);
+	if (len > 0) 
+	{
+		TCHAR *character = new TCHAR[len + 1];
+
+		ImmGetCompositionString(hImc, type, character, len);
+		character[len] = 0;
+
+		lstrcpy(change_to, character);
+
+		SetIME(g_nLastMaxChars);
+
+		delete[] character;
+	}
+
+}
+
 LRESULT CALLBACK EditProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam)
 {
 	HIMC hImc = NULL;
-	TCHAR *szComp;
 
 	switch (iMessage) {
+	case WM_CREATE:
+		g_bHan = FALSE;
+		break;
+	case WM_CHAR:
+		g_bHan = FALSE;
+		break;
 	case WM_KEYDOWN:
 		switch (wParam) {
 		case VK_RETURN:
@@ -76,20 +108,25 @@ LRESULT CALLBACK EditProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam
 
 		if (lParam & GCS_COMPSTR) // 조립 중
 		{
-			//
+			ConcatStringToComp(hImc, GCS_COMPSTR, g_lpszCompChar);
 		}
 		else  if (lParam & GCS_RESULTSTR) // 조립 완료
 		{
-			int len = ImmGetCompositionString(hImc, GCS_RESULTSTR, NULL, 0);
-			szComp = new TCHAR[len + 1];
-			ImmGetCompositionString(hImc, GCS_RESULTSTR, szComp, len);
-			szComp[len] = 0;
-			lstrcpy(g_lpszLastChar, szComp);
-			SetIME();
-			delete[] szComp;
+			ConcatStringToComp(hImc, GCS_RESULTSTR, g_lpszLastChar);
 		}
 
 		ImmReleaseContext(hWnd, hImc);
+
+		break;
+	case WM_IME_CHAR:
+		//if (IsDBCSLeadByte((BYTE)(wParam >> 8))) {
+		//	g_lpszLastChar[0] = HIBYTE(LOWORD(wParam));
+		//	g_lpszLastChar[1] = LOBYTE(LOWORD(wParam));
+		//	g_lpszLastChar[2] = 0;
+		//} else {
+		//	g_lpszLastChar[0] = (BYTE)wParam;
+		//	g_lpszLastChar[1] = 0;
+		//}
 
 		break;
 	case WM_SETFOCUS: // 포커스 획득
@@ -100,11 +137,12 @@ LRESULT CALLBACK EditProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam
 	return CallWindowProc(OldWndProc, hWnd, iMessage, wParam, lParam);
 }
 
-RSDLL int SetIME()
+RSDLL int SetIME(int maxChars)
 {
-	if (!g_bInit)
-		return FALSE;
-
+	if (!g_bInit) {
+		CreateEdit(maxChars, 0);
+	}
+		
 	SetFocus(g_hEdit);
 	return TRUE;
 }
@@ -143,22 +181,32 @@ RSDLL int GetCharText(const wchar_t* buffers)
 	return TRUE;
 }
 
-RSDLL WCHAR* GetCharFromPos(const int x, const int y)
-{
-	Point pt = { 0, 0 };
-	WCHAR lpszText[MAX_PATH];
-
-	DWORD ret = SendMessage(g_hEdit, EM_CHARFROMPOS, 0, MAKEWORD(x, y));
-	
-	SendMessage(g_hEdit, WM_GETTEXT, MAX_PATH, (LPARAM)lpszText);
-
-	pt.index_from_col = LOWORD(ret);
-	pt.index_from_row = HIWORD(ret);
-
-	return &lpszText[pt.index_from_col];
-}
-
 RSDLL LPWSTR GetLastChar()
 {
 	return g_lpszLastChar;
+}
+
+RSDLL LPWSTR GetCompStr()
+{
+	return g_lpszCompChar;
+}
+
+RSDLL LONG GetTextWidth(LPCWSTR lpString, int c)
+{
+	SIZE sz = { 0, 0 };
+	
+	if (!g_bInit)
+		return 0;
+
+	HDC hDC = GetDC(g_hWnd);
+
+	// 폰트 선택이 되지 않았기 때문에 정확한 폰트를 계산할 수 없음.
+	// pGraphics-> 어딘가에 있을 것으로 추정.
+
+	GetTextExtentPoint32W(hDC, lpString, c, &sz);
+
+	ReleaseDC(g_hWnd, hDC);
+
+	return sz.cx;
+	
 }

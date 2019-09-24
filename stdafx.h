@@ -23,6 +23,8 @@ extern "C" {
 #define RSDLL __declspec(dllimport)
 #endif
 
+	#define DEFAULT_MAX_CHARS 40
+
 	struct Point {
 		WORD index_from_col;
 		WORD index_from_row;
@@ -30,14 +32,18 @@ extern "C" {
 
 	// 이전 버전 호환용
 	RSDLL HANDLE CreateEdit(int maxChars, const int unknown);
-	RSDLL int SetIME();
+	RSDLL int SetIME(int maxChars = DEFAULT_MAX_CHARS);
 	RSDLL void FocusWindow();
 	RSDLL BOOL ReleaseIME();
 	RSDLL int GetCharText(const wchar_t* buffers);
 
+	//RSDLL int GetCaretIndex();
+
 	// 추가 API
-	RSDLL WCHAR* GetCharFromPos(const int x, const int y);
 	RSDLL LPWSTR GetLastChar();
+	RSDLL LPWSTR GetCompStr();
+
+	RSDLL LONG GetTextWidth(LPCWSTR lpString, int c);
 
 #ifdef __cplusplus
 }
